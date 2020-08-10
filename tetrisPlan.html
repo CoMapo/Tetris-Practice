@@ -1,0 +1,348 @@
+<html>
+<head>
+    <title>Tetris Plan</title>
+    <style>
+        /* Whole Interface */
+        div#TetrisBoardDiv, div#ControlPanelDiv {
+            display: inline-block;
+            margin: 20px;
+        } 
+
+        table#TetrisBoardTable {
+            position:relative;
+        }
+
+        div#BoradSwitching {
+            width: 60%;
+            margin: auto;
+            position: relative;
+            top: 10px;     
+        }
+
+        /* Table Board */
+        table#TetrisBoardTable {
+            border-collapse: collapse;
+        }
+
+        table#TetrisBoardTable td {
+            border: 1px solid black;
+            width: 30px;
+            height: 30px;
+        }
+
+        table[id^=BlockTable] td {
+            width: 20px;
+            height: 20px;
+        }
+
+        div.BlockSelect > div {
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        /* Switching button */
+        div#BoradSwitching > button#previousButton {
+            width: 40%;
+            position: absolute;
+            left: 0px;
+        }
+
+        div#BoradSwitching > button#nextButton {
+            width: 40%;
+            position: absolute;
+            right: 0px;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="TetrisBoardDiv">
+        <div id="Board"></div>
+        <div id="BoradSwitching">
+            <button id="previousButton">Previous</button>
+            <button id="nextButton">Next</button>       
+        </div>
+    </div>   
+    <div id="ControlPanelDiv">
+        <h1 id="PanelHead">Control Panel</h1>
+        <div class="BlockSelect">
+            <div id="L-BlockSelect"></div>
+            <div id="J-BlockSelect"></div>
+            <div id="S-BlockSelect"></div>
+            <div id="Z-BlockSelect"></div>
+            <div id="O-BlockSelect"></div>
+            <div id="T-BlockSelect"></div>
+            <div id="I-BlockSelect"></div>
+            <div id="Trash-BlockSelect"></div>
+            <div id="Empty-BlockSelect">
+                <h2>Eraser</h2>
+            </div>
+            <div id="ClearFull">
+                <h2>Clear Full Row</h2>
+            </div>
+            <div id="Reset">
+                <h2>Reset</h2>
+            </div>
+            <button onclick="test()">Test</button>
+        </div>
+    </div>
+    <script>
+        var boradXLimit = 10;
+        var boradYLimit = 20;
+        var panBlock;
+        var boradSaves = new Array();
+        var saveNum = -1;
+
+        /*-----Create Block-----*/
+        var block = {};
+        block["L"] = {color: "rgb(253, 148, 2)", blockShape: ""};
+        block["J"] = {color: "rgb(30, 30, 198)", blockShape: ""};
+        block["S"] = {color: "rgb(232, 20, 20)", blockShape: ""};
+        block["Z"] = {color: "rgb(50, 228, 50)", blockShape: ""};
+        block["O"] = {color: "rgb(234, 234, 21)", blockShape: ""};
+        block["T"] = {color: "rgb(200, 30, 200)", blockShape: ""};
+        block["I"] = {color: "rgb(0, 179, 241)", blockShape: ""};
+        block["Trash"] = {color: "rgb(150, 150, 150)", blockShape: ""};
+        block["Empty"] = {color: "transparent", blockShape: ""};
+
+        var blockTable = "";
+        for (var i = 0; i < 2; i++) {
+            blockTable += "<tr>";
+            for(var j = 0; j < 4; j++) {
+                blockTable += "<td id='b" + i + j + "'></td>";
+            }
+            blockTable += "</tr>";
+        }
+        blockTable += "</table>";
+
+        block["L"].blockShape += "<table id='BlockTableL'>" + blockTable + "</table><style>table#BlockTableL td#b10,table#BlockTableL  td#b11,table#BlockTableL  td#b12,table#BlockTableL  td#b02{background-color: " + block["L"].color + ";}</style>";
+        block["J"].blockShape += "<table id='BlockTableJ'>" + blockTable + "</table><style>table#BlockTableJ td#b10,table#BlockTableJ  td#b11,table#BlockTableJ  td#b12,table#BlockTableJ  td#b00{background-color: " + block["J"].color + ";}</style>";
+        block["S"].blockShape += "<table id='BlockTableS'>" + blockTable + "</table><style>table#BlockTableS td#b00, table#BlockTableS td#b01, table#BlockTableS td#b11, table#BlockTableS td#b12{background-color: " + block["S"].color + ";}</style>";
+        block["Z"].blockShape += "<table id='BlockTableZ'>" + blockTable + "</table><style>table#BlockTableZ td#b01, table#BlockTableZ td#b02, table#BlockTableZ td#b10, table#BlockTableZ td#b11{background-color: " + block["Z"].color + ";}</style>";
+        block["O"].blockShape += "<table id='BlockTableO'>" + blockTable + "</table><style>table#BlockTableO td#b00, table#BlockTableO td#b01, table#BlockTableO td#b10, table#BlockTableO td#b11{background-color: " + block["O"].color+ ";}</style>";
+        block["T"].blockShape += "<table id='BlockTableT'>" + blockTable + "</table><style>table#BlockTableT td#b01, table#BlockTableT td#b10, table#BlockTableT td#b11, table#BlockTableT td#b12{background-color: " + block["T"].color + ";}</style>";
+        block["I"].blockShape += "<table id='BlockTableI'>" + blockTable + "</table><style>table#BlockTableI td#b10, table#BlockTableI td#b11, table#BlockTableI td#b12, table#BlockTableI td#b13{background-color: " + block["I"].color + ";}</style>";
+        block["Trash"].blockShape += "<table id='BlockTableTrash'>" + blockTable + "</table><style>table#BlockTableTrash td#b10{background-color: " + block["Trash"].color + ";}</style>";
+        /*-----End-----*/
+
+        function getBoradGrids() {
+            return document.getElementById("TetrisBoardTable").getElementsByTagName("Td");
+        }
+
+        function getBoradGridId(y, x) {
+            return "G" + ("0" + x.toString()).slice(-2) + ("0" + y.toString()).slice(-2);
+        }
+
+        function getBoradGrid(y, x) {
+            return document.getElementById(getBoradGridId(y, x));
+        }
+
+        function getX(gridId) {
+            return parseInt(gridId.substring(1,3));
+        }
+
+        function getY(gridId) {
+            return parseInt(gridId.substring(3,5));
+        }
+
+        function createBoradArray() {
+            var boradArray = new Array(boradYLimit);
+            for(var y = (boradYLimit -1); y >= 0; y--) {
+                boradArray[y] = new Array(boradXLimit);
+                for(var x = 0; x < boradXLimit; x++) {
+                    boradArray[y][x] = {color: block["Empty"].color, placed: false};
+                }
+            }
+            return boradArray;
+        }
+
+        /*-----for control panel-----*/
+        function changePan(blockType) {
+            panBlock = block[blockType];
+        }
+
+        function changeGridColor(grid, color) {
+            boradGrids[getY(grid.id)][getX(grid.id)].color = color;
+
+            if (boradGrids[getY(grid.id)][getX(grid.id)].color == block["Empty"].color) 
+            boradGrids[getY(grid.id)][getX(grid.id)].placed = false;
+            else
+            boradGrids[getY(grid.id)][getX(grid.id)].placed = true;
+
+            grid.style.backgroundColor = boradGrids[getY(grid.id)][getX(grid.id)].color;        
+        }
+
+        function ActivePan(blockType) {
+            //console.log("ActivePan");
+            changePan(blockType);
+
+            var panTargets = getBoradGrids();
+
+            var mouseDown = false;
+            window .addEventListener("mousedown", function(e) { mouseDown = true; });      
+            window.addEventListener("mouseup", function(e) { mouseDown = false; });
+            for (var i = 0; i < panTargets.length; i++) {
+                panTargets[i].removeEventListener("mouseup", saveBorad);
+                panTargets[i].addEventListener("mouseup", saveBorad);
+                panTargets[i].addEventListener("mousemove", function(e) { if(mouseDown) changeGridColor(this, panBlock.color); });     
+                panTargets[i].addEventListener("mousedown", function(e) { changeGridColor(this, panBlock.color); });
+            }
+        }
+
+        function clearFullRow() {
+            var temp = createBoradArray();
+            var tempY = 0;
+            var current = getBoradGrids();
+            var fullExist = false;
+
+            for(var y = 0; y < boradGrids.length; y++) {
+                if(countPlaced(y) == boradGrids[y].length) {
+                    fullExist = true;
+                    for (var x = 0; x < boradGrids[y].length; x++) {
+                        boradGrids[y][x].color = block["Empty"].color;
+                        boradGrids[y][x].placed = false;
+                    }
+                } else if(countPlaced(y) > 0 && countPlaced(y) < boradGrids[y].length) {
+                    temp[tempY++] = boradGrids[y];
+                }
+            }
+
+            if(fullExist) {
+                boradGrids = temp;
+                for (var i = 0; i < current.length; i++) {
+                    changeGridColor(current[i], boradGrids[getY(current[i].id)][getX(current[i].id)].color);
+                }
+                saveBorad();
+            }
+        }
+
+        function countPlaced(y) {
+            var count = 0;
+            for(var x = 0; x < boradGrids[y].length; x++) {
+                if(boradGrids[y][x].placed) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        function resetBorad() {
+            var panTargets = getBoradGrids();
+            for (var i = 0; i < panTargets.length; i++) {
+                changeGridColor(panTargets[i], block["Empty"].color);
+            }
+            saveBorad();
+        }
+
+        function saveBorad() {
+            //console.log("saveBorad");
+            boradSaves[++saveNum] = JSON.parse(JSON.stringify(boradGrids));
+        }
+
+        function loadBorad(loadBack) {
+            //console.log("loadBorad");
+            var saveLoaded;
+            if(loadBack) {
+                if(saveNum != 0)
+                    saveLoaded = boradSaves[--saveNum];
+            }else if(saveNum < (boradSaves.length - 1))
+                saveLoaded = boradSaves[++saveNum];
+            current = getBoradGrids();
+            var i = 0;
+            while(i < current.length) {
+                for (var y = (boradYLimit - 1); y >= 0; y--) {
+                    for (var x = 0; x < boradXLimit; x++) {
+                        changeGridColor(current[i++], saveLoaded[y][x].color);
+                    }
+                }
+            }
+        }
+
+        /*-----Create Borad-----*/
+        var Board = "";
+        var boradGrids = createBoradArray();
+        Board += "<table id='TetrisBoardTable'>";
+        for (var y = (boradYLimit - 1); y >= 0; y--) {
+            Board += "<tr>";
+            for (var x = 0; x < boradXLimit; x++) {
+                var gridId = getBoradGridId(y, x);
+                //console.log("X:" + x + ", Y:" + y);
+                //console.log(boradGrids[x, y]);
+                Board += "<td id=" + gridId + " style = background-color:" + boradGrids[y][x].color + "></td>";
+            }
+            Board += "</tr>";
+        }
+        Board += "</table>";
+        document.getElementById("Board").innerHTML = Board;      
+        document.getElementById("Board").ondragstart = function() { return false; }; 
+        /*-----End-----*/
+
+        
+        /*-----End-----*/     
+
+        //show block simple
+        document.getElementById("L-BlockSelect").innerHTML = block["L"].blockShape;
+        document.getElementById("J-BlockSelect").innerHTML = block["J"].blockShape;
+        document.getElementById("S-BlockSelect").innerHTML = block["S"].blockShape;
+        document.getElementById("Z-BlockSelect").innerHTML = block["Z"].blockShape;
+        document.getElementById("O-BlockSelect").innerHTML = block["O"].blockShape;
+        document.getElementById("T-BlockSelect").innerHTML = block["T"].blockShape;
+        document.getElementById("I-BlockSelect").innerHTML = block["I"].blockShape;
+        document.getElementById("Trash-BlockSelect").innerHTML = block["Trash"].blockShape;
+
+        saveBorad();//save empty borad
+
+        //active switching button
+        document.getElementById("previousButton").addEventListener("click", () => { loadBorad(true) });
+        document.getElementById("nextButton").addEventListener("click", () => { loadBorad(false) });
+
+        //active control panel
+        document.getElementById("L-BlockSelect").addEventListener("click", () => { ActivePan("L"); });
+        document.getElementById("J-BlockSelect").addEventListener("click", () => { ActivePan("J"); });
+        document.getElementById("S-BlockSelect").addEventListener("click", () => { ActivePan("S"); });
+        document.getElementById("Z-BlockSelect").addEventListener("click", () => { ActivePan("Z"); });
+        document.getElementById("O-BlockSelect").addEventListener("click", () => { ActivePan("O"); });
+        document.getElementById("T-BlockSelect").addEventListener("click", () => { ActivePan("T"); });
+        document.getElementById("I-BlockSelect").addEventListener("click", () => { ActivePan("I"); });
+        document.getElementById("Trash-BlockSelect").addEventListener("click", () => { ActivePan("Trash"); });
+        document.getElementById("Empty-BlockSelect").addEventListener("click", () => { ActivePan("Empty"); });
+        document.getElementById("Reset").addEventListener("click", resetBorad);
+        document.getElementById("ClearFull").addEventListener("click", clearFullRow);
+
+        //keyborad control
+        window.addEventListener("keydown", function(e) {
+            //console.log(e);
+            if (e.code == "KeyQ")
+                ActivePan("L");
+            if (e.code == "KeyW")
+                ActivePan("J");
+            if (e.code == "KeyE")
+                ActivePan("S");
+            if (e.code == "KeyR")
+                ActivePan("Z");
+            if (e.code == "KeyA")
+                ActivePan("O");
+            if (e.code == "KeyS")
+                ActivePan("T");
+            if (e.code == "KeyD")
+                ActivePan("I");
+            if (e.code == "KeyF")
+                ActivePan("Trash");
+            if (e.code == "KeyT")
+                ActivePan("Empty");
+            if (e.code == "KeyG")
+                resetBorad();
+            if (e.ctrlKey && e.code == "KeyZ") 
+                loadBorad(true);
+            if (e.code == "Space") 
+                clearFullRow();
+        });
+
+        function test() {
+            console.log("----------boradGrids----------");console.log(boradGrids);     
+            console.log("----------boradSaves----------");console.log(boradSaves);     
+            console.log("----------GetBorad----------");console.log(getBoradGrids());
+        }
+    </script>
+</body>
+</html>
