@@ -35,7 +35,7 @@
             height: 20px;
         }
 
-        div.BlockSelect > div {
+        div#BlockSelect > div {
             margin: 5px;
             cursor: pointer;
         }
@@ -64,34 +64,17 @@
         </div>
     </div>   
     <div id="ControlPanelDiv">
-        <h1 id="PanelHead">Control Panel</h1>
-        <div class="BlockSelect">
-            <div id="L-BlockSelect"></div>
-            <div id="J-BlockSelect"></div>
-            <div id="S-BlockSelect"></div>
-            <div id="Z-BlockSelect"></div>
-            <div id="O-BlockSelect"></div>
-            <div id="T-BlockSelect"></div>
-            <div id="I-BlockSelect"></div>
-            <div id="Trash-BlockSelect"></div>
-            <div id="Empty-BlockSelect">
-                <h2>Eraser</h2>
-            </div>
-            <div id="ClearFull">
-                <h2>Clear Full Row</h2>
-            </div>
-            <div id="Reset">
-                <h2>Reset</h2>
-            </div>
-            <button onclick="test()">Test</button>
-        </div>
     </div>
     <script>
         var boradXLimit = 10;
         var boradYLimit = 20;
         var panBlock;
-        var boradSaves = new Array();
+        var history = new Array();
         var saveNum = -1;
+        var mode = [{start: function(){}}];
+        var currentMode = "freeMode";
+        var board = "";
+        var boradGrids;
 
         /*-----Create Block-----*/
         var block = {};
@@ -156,7 +139,6 @@
             return boradArray;
         }
 
-        /*-----for control panel-----*/
         function changePan(blockType) {
             panBlock = block[blockType];
         }
@@ -235,18 +217,16 @@
         }
 
         function saveBorad() {
-            //console.log("saveBorad");
-            boradSaves[++saveNum] = JSON.parse(JSON.stringify(boradGrids));
+            history[++saveNum] = JSON.parse(JSON.stringify(boradGrids));
         }
 
         function loadBorad(loadBack) {
-            //console.log("loadBorad");
             var saveLoaded;
             if(loadBack) {
                 if(saveNum != 0)
-                    saveLoaded = boradSaves[--saveNum];
-            }else if(saveNum < (boradSaves.length - 1))
-                saveLoaded = boradSaves[++saveNum];
+                    saveLoaded = history[--saveNum];
+            }else if(saveNum < (history.length - 1))
+                saveLoaded = history[++saveNum];
             current = getBoradGrids();
             var i = 0;
             while(i < current.length) {
@@ -258,91 +238,126 @@
             }
         }
 
-        /*-----Create Borad-----*/
-        var Board = "";
-        var boradGrids = createBoradArray();
-        Board += "<table id='TetrisBoardTable'>";
-        for (var y = (boradYLimit - 1); y >= 0; y--) {
-            Board += "<tr>";
-            for (var x = 0; x < boradXLimit; x++) {
-                var gridId = getBoradGridId(y, x);
-                //console.log("X:" + x + ", Y:" + y);
-                //console.log(boradGrids[x, y]);
-                Board += "<td id=" + gridId + " style = background-color:" + boradGrids[y][x].color + "></td>";
+        function CreateBoard() {
+            boradGrids = createBoradArray();
+            board += "<table id='TetrisBoardTable'>";
+            for (var y = (boradYLimit - 1); y >= 0; y--) {
+                board += "<tr>";
+                for (var x = 0; x < boradXLimit; x++) {
+                    var gridId = getBoradGridId(y, x);
+                    //console.log("X:" + x + ", Y:" + y);
+                    //console.log(boradGrids[x, y]);
+                    board += "<td id=" + gridId + " style = background-color:" + boradGrids[y][x].color + "></td>";
+                }
+                board += "</tr>";
             }
-            Board += "</tr>";
+            board += "</table>";
+            document.getElementById("Board").innerHTML = board;      
+            document.getElementById("Board").ondragstart = function() { return false; }; 
         }
-        Board += "</table>";
-        document.getElementById("Board").innerHTML = Board;      
-        document.getElementById("Board").ondragstart = function() { return false; }; 
-        /*-----End-----*/
 
-        
-        /*-----End-----*/     
-
-        //show block simple
-        document.getElementById("L-BlockSelect").innerHTML = block["L"].blockShape;
-        document.getElementById("J-BlockSelect").innerHTML = block["J"].blockShape;
-        document.getElementById("S-BlockSelect").innerHTML = block["S"].blockShape;
-        document.getElementById("Z-BlockSelect").innerHTML = block["Z"].blockShape;
-        document.getElementById("O-BlockSelect").innerHTML = block["O"].blockShape;
-        document.getElementById("T-BlockSelect").innerHTML = block["T"].blockShape;
-        document.getElementById("I-BlockSelect").innerHTML = block["I"].blockShape;
-        document.getElementById("Trash-BlockSelect").innerHTML = block["Trash"].blockShape;
-
-        saveBorad();//save empty borad
-
-        //active switching button
-        document.getElementById("previousButton").addEventListener("click", () => { loadBorad(true) });
-        document.getElementById("nextButton").addEventListener("click", () => { loadBorad(false) });
-
-        //active control panel
-        document.getElementById("L-BlockSelect").addEventListener("click", () => { ActivePan("L"); });
-        document.getElementById("J-BlockSelect").addEventListener("click", () => { ActivePan("J"); });
-        document.getElementById("S-BlockSelect").addEventListener("click", () => { ActivePan("S"); });
-        document.getElementById("Z-BlockSelect").addEventListener("click", () => { ActivePan("Z"); });
-        document.getElementById("O-BlockSelect").addEventListener("click", () => { ActivePan("O"); });
-        document.getElementById("T-BlockSelect").addEventListener("click", () => { ActivePan("T"); });
-        document.getElementById("I-BlockSelect").addEventListener("click", () => { ActivePan("I"); });
-        document.getElementById("Trash-BlockSelect").addEventListener("click", () => { ActivePan("Trash"); });
-        document.getElementById("Empty-BlockSelect").addEventListener("click", () => { ActivePan("Empty"); });
-        document.getElementById("Reset").addEventListener("click", resetBorad);
-        document.getElementById("ClearFull").addEventListener("click", clearFullRow);
-
-        //keyborad control
-        window.addEventListener("keydown", function(e) {
-            //console.log(e);
-            if (e.code == "KeyQ")
-                ActivePan("L");
-            if (e.code == "KeyW")
-                ActivePan("J");
-            if (e.code == "KeyE")
-                ActivePan("S");
-            if (e.code == "KeyR")
-                ActivePan("Z");
-            if (e.code == "KeyA")
-                ActivePan("O");
-            if (e.code == "KeyS")
-                ActivePan("T");
-            if (e.code == "KeyD")
-                ActivePan("I");
-            if (e.code == "KeyF")
-                ActivePan("Trash");
-            if (e.code == "KeyT")
-                ActivePan("Empty");
-            if (e.code == "KeyG")
-                resetBorad();
-            if (e.ctrlKey && e.code == "KeyZ") 
-                loadBorad(true);
-            if (e.code == "Space") 
-                clearFullRow();
-        });
-
-        function test() {
-            console.log("----------boradGrids----------");console.log(boradGrids);     
-            console.log("----------boradSaves----------");console.log(boradSaves);     
-            console.log("----------GetBorad----------");console.log(getBoradGrids());
+        function DrawFreePanel() {
+            var freePanel = '' +
+                '<h1 id="PanelHead">Control Panel</h1>' +
+                '<div id="BlockSelect">' +
+                    '<div id="L-BlockSelect"></div>' +
+                    '<div id="J-BlockSelect"></div>' +
+                    '<div id="S-BlockSelect"></div>' +
+                    '<div id="Z-BlockSelect"></div>' +
+                    '<div id="O-BlockSelect"></div>' +
+                    '<div id="T-BlockSelect"></div>' +
+                    '<div id="I-BlockSelect"></div>' +
+                    '<div id="Trash-BlockSelect"></div>' +
+                    '<div id="Empty-BlockSelect">' +
+                        '<h2>Eraser</h2>' +
+                    '</div>' +
+                    '<div id="ClearFull">' +
+                        '<h2>Clear Full Row</h2>' +
+                    '</div>' +
+                    '<div id="Reset">' +
+                        '<h2>Reset</h2>' +
+                    '</div>' +
+                    '<button onclick="test()">Test</button>' +
+                '</div>'
+            ;
+            document.getElementById("ControlPanelDiv").innerHTML = freePanel;
         }
+
+        function ActivePanel() {
+            //show block simple
+            document.getElementById("L-BlockSelect").innerHTML = block["L"].blockShape;
+            document.getElementById("J-BlockSelect").innerHTML = block["J"].blockShape;
+            document.getElementById("S-BlockSelect").innerHTML = block["S"].blockShape;
+            document.getElementById("Z-BlockSelect").innerHTML = block["Z"].blockShape;
+            document.getElementById("O-BlockSelect").innerHTML = block["O"].blockShape;
+            document.getElementById("T-BlockSelect").innerHTML = block["T"].blockShape;
+            document.getElementById("I-BlockSelect").innerHTML = block["I"].blockShape;
+            document.getElementById("Trash-BlockSelect").innerHTML = block["Trash"].blockShape;
+
+            //active control panel
+            document.getElementById("L-BlockSelect").addEventListener("click", () => { ActivePan("L"); });
+            document.getElementById("J-BlockSelect").addEventListener("click", () => { ActivePan("J"); });
+            document.getElementById("S-BlockSelect").addEventListener("click", () => { ActivePan("S"); });
+            document.getElementById("Z-BlockSelect").addEventListener("click", () => { ActivePan("Z"); });
+            document.getElementById("O-BlockSelect").addEventListener("click", () => { ActivePan("O"); });
+            document.getElementById("T-BlockSelect").addEventListener("click", () => { ActivePan("T"); });
+            document.getElementById("I-BlockSelect").addEventListener("click", () => { ActivePan("I"); });
+            document.getElementById("Trash-BlockSelect").addEventListener("click", () => { ActivePan("Trash"); });
+            document.getElementById("Empty-BlockSelect").addEventListener("click", () => { ActivePan("Empty"); });
+            document.getElementById("Reset").addEventListener("click", resetBorad);
+            document.getElementById("ClearFull").addEventListener("click", clearFullRow);
+        }
+
+        function AddHotKey() {
+            //keyborad control
+            window.addEventListener("keydown", function(e) {
+                //console.log(e);
+                if (e.code == "KeyQ")
+                    ActivePan("L");
+                if (e.code == "KeyW")
+                    ActivePan("J");
+                if (e.code == "KeyE")
+                    ActivePan("S");
+                if (e.code == "KeyR")
+                    ActivePan("Z");
+                if (e.code == "KeyA")
+                    ActivePan("O");
+                if (e.code == "KeyS")
+                    ActivePan("T");
+                if (e.code == "KeyD")
+                    ActivePan("I");
+                if (e.code == "KeyF")
+                    ActivePan("Trash");
+                if (e.code == "KeyT")
+                    ActivePan("Empty");
+                if (e.code == "KeyG")
+                    resetBorad();
+                if (e.ctrlKey && e.code == "KeyZ") 
+                    loadBorad(true);
+                if (e.code == "Space") 
+                    clearFullRow();
+            });
+        }
+
+        mode["freeMode"] = { start: function() {
+            CreateBoard();
+            DrawFreePanel();
+            ActivePanel();
+            AddHotKey();
+        }}
+
+        function start() {
+            mode[currentMode].start();
+
+            saveBorad();//save empty borad
+
+            //active switching button
+            document.getElementById("previousButton").addEventListener("click", () => { loadBorad(true) });
+            document.getElementById("nextButton").addEventListener("click", () => { loadBorad(false) });
+        }
+
+        start();
+
     </script>
 </body>
 </html>
