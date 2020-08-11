@@ -3,8 +3,8 @@
     <title>Tetris Plan</title>
     <style>
         /* Whole Interface */
-        div#TetrisBoardDiv, div#ControlPanelDiv {
-            display: inline-block;
+        div#TetrisBoardDiv, div#ControDiv {
+            float: left;
             margin: 20px;
         } 
 
@@ -12,7 +12,7 @@
             position:relative;
         }
 
-        div#BoradSwitching {
+        div#HistoryTraveling {
             width: 60%;
             margin: auto;
             position: relative;
@@ -35,19 +35,25 @@
             height: 20px;
         }
 
+
+        /* Panel */
         div#BlockSelect > div {
             margin: 5px;
             cursor: pointer;
         }
 
-        /* Switching button */
-        div#BoradSwitching > button#previousButton {
+        h1#PanelHead {
+            margin: 0px;
+        }
+
+        /* Travel history button */
+        div#HistoryTraveling > button#previousButton {
             width: 40%;
             position: absolute;
             left: 0px;
         }
 
-        div#BoradSwitching > button#nextButton {
+        div#HistoryTraveling > button#nextButton {
             width: 40%;
             position: absolute;
             right: 0px;
@@ -58,18 +64,25 @@
 <body>
     <div id="TetrisBoardDiv">
         <div id="Board"></div>
-        <div id="BoradSwitching">
+        <div id="HistoryTraveling">
             <button id="previousButton">Previous</button>
             <button id="nextButton">Next</button>       
         </div>
     </div>   
-    <div id="ControlPanelDiv">
+    <div id="ControDiv">
+        <div id="ModeSwitching">
+            <button id="switchFreeMode">Free Mode</button>
+            <button id="switchPracticeMode">Practice Mode</button>
+        </div>
+        <div id="ControlPanel">
+        </div>
     </div>
+    <button onclick="test()">Test</button>
     <script>
         var boradXLimit = 10;
         var boradYLimit = 20;
         var panBlock;
-        var history = new Array();
+        var stepHistory = new Array();
         var saveNum = -1;
         var mode = [{start: function(){}}];
         var currentMode = "freeMode";
@@ -209,24 +222,26 @@
         }
 
         function resetBorad() {
+            changePan("Empty");
             var panTargets = getBoradGrids();
             for (var i = 0; i < panTargets.length; i++) {
-                changeGridColor(panTargets[i], block["Empty"].color);
+                changeGridColor(panTargets[i], panBlock.color);
             }
             saveBorad();
         }
 
         function saveBorad() {
-            history[++saveNum] = JSON.parse(JSON.stringify(boradGrids));
+            stepHistory[++saveNum] = JSON.parse(JSON.stringify(boradGrids));
         }
 
         function loadBorad(loadBack) {
             var saveLoaded;
             if(loadBack) {
                 if(saveNum != 0)
-                    saveLoaded = history[--saveNum];
-            }else if(saveNum < (history.length - 1))
-                saveLoaded = history[++saveNum];
+                    saveLoaded = stepHistory[--saveNum];
+            }else if(saveNum < (stepHistory.length - 1)) {
+                saveLoaded = stepHistory[++saveNum];
+            }
             current = getBoradGrids();
             var i = 0;
             while(i < current.length) {
@@ -245,8 +260,6 @@
                 board += "<tr>";
                 for (var x = 0; x < boradXLimit; x++) {
                     var gridId = getBoradGridId(y, x);
-                    //console.log("X:" + x + ", Y:" + y);
-                    //console.log(boradGrids[x, y]);
                     board += "<td id=" + gridId + " style = background-color:" + boradGrids[y][x].color + "></td>";
                 }
                 board += "</tr>";
@@ -255,7 +268,7 @@
             document.getElementById("Board").innerHTML = board;      
             document.getElementById("Board").ondragstart = function() { return false; }; 
         }
-
+        
         function DrawFreePanel() {
             var freePanel = '' +
                 '<h1 id="PanelHead">Control Panel</h1>' +
@@ -277,10 +290,9 @@
                     '<div id="Reset">' +
                         '<h2>Reset</h2>' +
                     '</div>' +
-                    '<button onclick="test()">Test</button>' +
                 '</div>'
             ;
-            document.getElementById("ControlPanelDiv").innerHTML = freePanel;
+            document.getElementById("ControlPanel").innerHTML = freePanel;
         }
 
         function ActivePanel() {
@@ -339,23 +351,43 @@
             });
         }
 
-        mode["freeMode"] = { start: function() {
-            CreateBoard();
-            DrawFreePanel();
-            ActivePanel();
-            AddHotKey();
-        }}
-
-        function start() {
-            mode[currentMode].start();
-
-            saveBorad();//save empty borad
-
-            //active switching button
-            document.getElementById("previousButton").addEventListener("click", () => { loadBorad(true) });
-            document.getElementById("nextButton").addEventListener("click", () => { loadBorad(false) });
+        function DrawNextView () {
+            var nextView = "";
+            document.getElementById("ControlPanel").innerHTML = nextView;
         }
 
+        function start() {
+            mode["freeMode"] = {start: function() {
+                currentMode = "freeMode";
+                stepHistory = new Array();
+                resetBorad();
+                
+                DrawFreePanel();
+                ActivePanel();
+                AddHotKey();
+            }};
+
+            mode["practiceMode"] = {start: function() {
+                currentMode = "practiceMode";
+                stepHistory = new Array();
+                resetBorad();
+
+                DrawNextView();
+            }};
+
+            CreateBoard();
+            
+            saveBorad();//save empty borad
+
+            //active travel history button
+            document.getElementById("previousButton").addEventListener("click", () => { loadBorad(true) });
+            document.getElementById("nextButton").addEventListener("click", () => { loadBorad(false) });
+
+            //active switch mode button
+            document.getElementById("switchFreeMode").addEventListener("click", () => { mode["freeMode"].start() });
+            document.getElementById("switchPracticeMode").addEventListener("click", () => { mode["practiceMode"].start() });
+        }
+        
         start();
 
     </script>
