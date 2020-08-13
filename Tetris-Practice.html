@@ -1,0 +1,537 @@
+<html>
+<head>
+    <title>Tetris Plan</title>
+    <style>
+        /* Whole Interface */
+        div#TetrisBoardDiv, div#ControDiv {
+            float: left;
+            margin: 20px;
+        } 
+
+        table#TetrisBoardTable {
+            position:relative;
+        }
+
+        div#HistoryTraveling {
+            width: 60%;
+            margin: auto;
+            position: relative;
+            top: 10px;     
+        }
+
+        /* Table Board */
+        table#TetrisBoardTable {
+            border-collapse: collapse;
+        }
+
+        table#TetrisBoardTable td {
+            border: 1px solid black;
+            width: 30px;
+            height: 30px;
+        }
+
+        table[id^=BlockTable] td {
+            width: 20px;
+            height: 20px;
+        }
+
+
+        /* Panel */
+        div#BlockSelect > div {
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        h1#PanelHead {
+            margin: 0px;
+        }
+
+        div#ControlPanel button {  
+            display: block;
+            width: 140px;
+            height: 30px;
+            font-size: 18px;
+        }
+
+        div#ControlPanel  * {
+            margin: 5px;
+        }
+
+        div#Hold {
+            height: 60px;
+        }
+
+        /* Travel history button */
+        div#HistoryTraveling > button#previousButton {
+            width: 40%;
+            position: absolute;
+            left: 0px;
+        }
+
+        div#HistoryTraveling > button#nextButton {
+            width: 40%;
+            position: absolute;
+            right: 0px;
+        }
+
+        div#HistoryTraveling > div#StepNumber {
+            width: 20%;
+            position: absolute;
+            right: 40%;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="TetrisBoardDiv">
+        <div id="Board"></div>
+        <div id="HistoryTraveling">
+            <button id="previousButton">Previous</button>
+            <div id="StepNumber"></div>
+            <button id="nextButton">Next</button>       
+        </div>
+    </div>   
+    <div id="ControDiv">
+        <div id="ModeSwitching">
+            <button id="switchFreeMode">Free Mode</button>
+            <button id="switchPracticeMode">Practice Mode</button>
+        </div>
+        <div id="ControlPanel">
+        </div>
+    </div>
+    <script>
+        /*-----Create Block-----*/
+        var block = {};
+        block["L"] = {color: "rgb(253, 148, 2)", blockShape: ""};
+        block["J"] = {color: "rgb(30, 30, 198)", blockShape: ""};
+        block["Z"] = {color: "rgb(232, 20, 20)", blockShape: ""};
+        block["S"] = {color: "rgb(50, 228, 50)", blockShape: ""};
+        block["O"] = {color: "rgb(234, 234, 21)", blockShape: ""};
+        block["T"] = {color: "rgb(200, 30, 200)", blockShape: ""};
+        block["I"] = {color: "rgb(0, 179, 241)", blockShape: ""};
+        block["Trash"] = {color: "rgb(150, 150, 150)", blockShape: ""};
+        block["Empty"] = {color: "transparent", blockShape: ""};
+
+        var blockTable = "";
+        for (var i = 0; i < 2; i++) {
+            blockTable += "<tr>";
+            for(var j = 0; j < 4; j++) {
+                blockTable += "<td id='b" + i + j + "'></td>";
+            }
+            blockTable += "</tr>";
+        }
+        blockTable += "</table>";
+
+        block["L"].blockShape += "<table id='BlockTableL'>" + blockTable + "</table><style>table#BlockTableL td#b10,table#BlockTableL  td#b11,table#BlockTableL  td#b12,table#BlockTableL  td#b02{background-color: " + block["L"].color + ";}</style>";
+        block["J"].blockShape += "<table id='BlockTableJ'>" + blockTable + "</table><style>table#BlockTableJ td#b10,table#BlockTableJ  td#b11,table#BlockTableJ  td#b12,table#BlockTableJ  td#b00{background-color: " + block["J"].color + ";}</style>";
+        block["Z"].blockShape += "<table id='BlockTableS'>" + blockTable + "</table><style>table#BlockTableS td#b00, table#BlockTableS td#b01, table#BlockTableS td#b11, table#BlockTableS td#b12{background-color: " + block["Z"].color + ";}</style>";
+        block["S"].blockShape += "<table id='BlockTableZ'>" + blockTable + "</table><style>table#BlockTableZ td#b01, table#BlockTableZ td#b02, table#BlockTableZ td#b10, table#BlockTableZ td#b11{background-color: " + block["S"].color + ";}</style>";
+        block["O"].blockShape += "<table id='BlockTableO'>" + blockTable + "</table><style>table#BlockTableO td#b00, table#BlockTableO td#b01, table#BlockTableO td#b10, table#BlockTableO td#b11{background-color: " + block["O"].color+ ";}</style>";
+        block["T"].blockShape += "<table id='BlockTableT'>" + blockTable + "</table><style>table#BlockTableT td#b01, table#BlockTableT td#b10, table#BlockTableT td#b11, table#BlockTableT td#b12{background-color: " + block["T"].color + ";}</style>";
+        block["I"].blockShape += "<table id='BlockTableI'>" + blockTable + "</table><style>table#BlockTableI td#b10, table#BlockTableI td#b11, table#BlockTableI td#b12, table#BlockTableI td#b13{background-color: " + block["I"].color + ";}</style>";
+        block["Trash"].blockShape += "<table id='BlockTableTrash'>" + blockTable + "</table><style>table#BlockTableTrash td#b10{background-color: " + block["Trash"].color + ";}</style>";
+        /*-----End-----*/
+        var boardXLimit = 10;
+        var boardYLimit = 20;
+        var panBlock;
+        var stepHistory = new Array();
+        var stepNum = -1;
+        var mode = [{start: function(){}}];
+        var currentMode;
+        var board = "";
+        var boardGrids;
+        var sevenBag = [{type: "L",color: block["L"].color, blockShape: block["L"].blockShape}, 
+                        {type: "J",color: block["J"].color, blockShape: block["J"].blockShape},
+                        {type: "S",color: block["S"].color, blockShape: block["S"].blockShape},
+                        {type: "Z",color: block["Z"].color, blockShape: block["Z"].blockShape},
+                        {type: "O",color: block["O"].color, blockShape: block["O"].blockShape},
+                        {type: "T",color: block["T"].color, blockShape: block["T"].blockShape},
+                        {type: "I",color: block["I"].color, blockShape: block["I"].blockShape}];
+        var queneLimit = 21;
+        var blockQueue = new Array();
+        var currentBlock = null;
+        var heldBlock = null;
+        var heldThisRound = false;
+
+        function getBoardGrids() {
+            return document.getElementById("TetrisBoardTable").getElementsByTagName("Td");
+        }
+
+        function getBoardGridId(y, x) {
+            return "G" + ("0" + x.toString()).slice(-2) + ("0" + y.toString()).slice(-2);
+        }
+
+        function getBoardGrid(y, x) {
+            return document.getElementById(getBoardGridId(y, x));
+        }
+
+        function getX(gridId) {
+            return parseInt(gridId.substring(1,3));
+        }
+
+        function getY(gridId) {
+            return parseInt(gridId.substring(3,5));
+        }
+
+        function createBoardArray() {
+            var boardArray = new Array(boardYLimit);
+            for(var y = (boardYLimit -1); y >= 0; y--) {
+                boardArray[y] = new Array(boardXLimit);
+                for(var x = 0; x < boardXLimit; x++) {
+                    boardArray[y][x] = {color: block["Empty"].color, placed: false};
+                }
+            }
+            return boardArray;
+        }
+
+        function changePan(blockType) {
+            panBlock = block[blockType];
+        }
+
+        function changeGridColor(grid, color) {
+            boardGrids[getY(grid.id)][getX(grid.id)].color = color;
+
+            if (boardGrids[getY(grid.id)][getX(grid.id)].color == block["Empty"].color) 
+            boardGrids[getY(grid.id)][getX(grid.id)].placed = false;
+            else
+            boardGrids[getY(grid.id)][getX(grid.id)].placed = true;
+
+            grid.style.backgroundColor = boardGrids[getY(grid.id)][getX(grid.id)].color;        
+        }
+
+        function activePan(blockType) {
+            changePan(blockType);
+
+            var panTargets = getBoardGrids();
+
+            var mouseDown = false;
+            window .addEventListener("mousedown", function(e) { mouseDown = true; });      
+            window.addEventListener("mouseup", function(e) { mouseDown = false; });
+            for (var i = 0; i < panTargets.length; i++) {
+                panTargets[i].removeEventListener("mouseup", saveHistory);
+                if(currentMode == "freeMode") {
+                    panTargets[i].addEventListener("mouseup", saveHistory);
+                }
+                panTargets[i].addEventListener("mousemove", function(e) { if(mouseDown) changeGridColor(this, panBlock.color); });     
+                panTargets[i].addEventListener("mousedown", function(e) { changeGridColor(this, panBlock.color); });
+            }
+        }
+
+        function clearFullRow() {
+            var temp = createBoardArray();
+            var tempY = 0;
+            var current = getBoardGrids();
+            var fullExist = false;
+
+            for(var y = 0; y < boardGrids.length; y++) {
+                if(countPlaced(y) == boardGrids[y].length) {
+                    fullExist = true;
+                    for (var x = 0; x < boardGrids[y].length; x++) {
+                        boardGrids[y][x].color = block["Empty"].color;
+                        boardGrids[y][x].placed = false;
+                    }
+                } else if(countPlaced(y) > 0 && countPlaced(y) < boardGrids[y].length) {
+                    temp[tempY++] = boardGrids[y];
+                }
+            }
+
+            if(fullExist) {
+                boardGrids = temp;
+                for (var i = 0; i < current.length; i++) {
+                    changeGridColor(current[i], boardGrids[getY(current[i].id)][getX(current[i].id)].color);
+                }
+            }
+            return fullExist;
+        }
+
+        function countPlaced(y) {
+            var count = 0;
+            for(var x = 0; x < boardGrids[y].length; x++) {
+                if(boardGrids[y][x].placed) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        function resetBoard() {
+            changePan("Empty");
+            var panTargets = getBoardGrids();
+            for (var i = 0; i < panTargets.length; i++) {
+                changeGridColor(panTargets[i], panBlock.color);
+            }
+        }
+
+        function loadBoard(board) {
+            var current = getBoardGrids();
+            var i = 0;
+            while(i < current.length) {
+                for (var y = (boardYLimit - 1); y >= 0; y--) {
+                    for (var x = 0; x < boardXLimit; x++) {
+                        changeGridColor(current[i++], board[y][x].color);
+                    }
+                }
+            }
+        }
+
+        function saveHistory() {        
+            stepHistory[++stepNum] = {board: null, currentBlock: null, heldBlock: null, blockQueue: null};
+            stepHistory[stepNum].board = JSON.parse(JSON.stringify(boardGrids));
+            if (currentMode == "practiceMode") {
+                stepHistory = stepHistory.slice(0, stepNum + 1);
+                stepHistory[stepNum].currentBlock = JSON.parse(JSON.stringify(currentBlock));
+                stepHistory[stepNum].blockQueue = JSON.parse(JSON.stringify(blockQueue));
+                stepHistory[stepNum].heldBlock = JSON.parse(JSON.stringify(heldBlock));
+            }
+            displayStepNum();
+        }
+
+        function loadHistory(loadBack) {
+            //Determine whether load back
+            var saveLoaded;
+            if(loadBack == 0) {
+                if(stepNum != 0)
+                    saveLoaded = stepHistory[--stepNum];
+            }else if(loadBack == 1 && stepNum < (stepHistory.length - 1)) {
+                saveLoaded = stepHistory[++stepNum];
+            } else if(loadBack == 2) {
+                saveLoaded = stepHistory[stepNum];
+            } else {
+                return;
+            }
+            loadBoard(saveLoaded.board);
+            if (currentMode == "practiceMode") {
+                currentBlock = JSON.parse(JSON.stringify(saveLoaded.currentBlock));
+                blockQueue = JSON.parse(JSON.stringify(saveLoaded.blockQueue));
+                heldBlock = JSON.parse(JSON.stringify(saveLoaded.heldBlock));
+                showNewGameStatus();
+            }
+            displayStepNum();
+        }
+
+        function clearHistory() {
+            stepHistory = new Array();
+            stepNum = -1;
+        }
+
+        function displayStepNum() {
+            document.getElementById("StepNumber").innerHTML = stepNum;
+        }
+
+        function createBoard() {
+            boardGrids = createBoardArray();
+            board += "<table id='TetrisBoardTable'>";
+            for (var y = (boardYLimit - 1); y >= 0; y--) {
+                board += "<tr>";
+                for (var x = 0; x < boardXLimit; x++) {
+                    var gridId = getBoardGridId(y, x);
+                    board += "<td id=" + gridId + " style = background-color:" + boardGrids[y][x].color + "></td>";
+                }
+                board += "</tr>";
+            }
+            board += "</table>";
+            document.getElementById("Board").innerHTML = board;      
+            document.getElementById("Board").ondragstart = function() { return false; }; 
+        }
+        
+        function drawFreePanel() {
+            var freePanel = '' +
+                '<h1 id="PanelHead">Control Panel</h1>' +
+                '<div id="BlockSelect">' +
+                    '<div id="L-BlockSelect"></div>' +
+                    '<div id="J-BlockSelect"></div>' +
+                    '<div id="S-BlockSelect"></div>' +
+                    '<div id="Z-BlockSelect"></div>' +
+                    '<div id="O-BlockSelect"></div>' +
+                    '<div id="T-BlockSelect"></div>' +
+                    '<div id="I-BlockSelect"></div>' +
+                    '<div id="Trash-BlockSelect"></div>' +
+                    '<button id="Empty-BlockSelect">Eraser</button>' +
+                    '<button id="ClearFull">Clear Full Row</button>' +
+                    '<button id="Reset">Reset</button>' +
+                '</div>'
+            ;
+            document.getElementById("ControlPanel").innerHTML = freePanel;
+            //show block simple
+            document.getElementById("L-BlockSelect").innerHTML = block["L"].blockShape;
+            document.getElementById("J-BlockSelect").innerHTML = block["J"].blockShape;
+            document.getElementById("S-BlockSelect").innerHTML = block["S"].blockShape;
+            document.getElementById("Z-BlockSelect").innerHTML = block["Z"].blockShape;
+            document.getElementById("O-BlockSelect").innerHTML = block["O"].blockShape;
+            document.getElementById("T-BlockSelect").innerHTML = block["T"].blockShape;
+            document.getElementById("I-BlockSelect").innerHTML = block["I"].blockShape;
+            document.getElementById("Trash-BlockSelect").innerHTML = block["Trash"].blockShape;
+        }
+
+        function drawGameStatus() {
+            var gameStatus = "" +
+                "<div id='PracticePanel'>" +
+                    "<h2 id='currentHead'>Current</h2>" +
+                    "<div id='Current'></div>" +
+                    "<h2 id='NextHead'>Next</h2>" + 
+                    "<div id='NextView'></div>" +
+                    "<button id='HoldButton'>Hold</button>" +
+                    "<div id='Hold'></div>" +
+                    "<button id='DrawButton'>Draw</button>"+
+                    "<button id='Empty-BlockSelect'>Eraser</button>" +
+                    "<button id='NextBlockButton'>Next BLock</button>" +
+                "</div>";
+            document.getElementById("ControlPanel").innerHTML = gameStatus;
+        }
+
+        function goToNextBlock() {
+            clearFullRow();
+            updateBlockQueue();
+            showNewGameStatus();
+            heldThisRound = false;
+        }
+
+        function showNewGameStatus() {
+            var nextFiveBlock = "";
+            for (var i =0; i < 5; i++) {
+                nextFiveBlock += blockQueue[i].blockShape;
+            }
+            document.getElementById("NextView").innerHTML = nextFiveBlock;
+            document.getElementById("Current").innerHTML = currentBlock.blockShape;
+            if (heldBlock)
+                document.getElementById("Hold").innerHTML = heldBlock.blockShape;
+            else
+                document.getElementById("Hold").innerHTML = "";
+            activePan(currentBlock.type);
+        }
+
+        function updateBlockQueue() {
+            var BagLength = sevenBag.length;
+            while ((queneLimit - blockQueue.length) >= 7) {
+                var tempBag = JSON.parse(JSON.stringify(sevenBag));
+                for (var j = 0; j < BagLength; j++) {
+                    var tempBlock = tempBag.splice(Math.floor(Math.random() * tempBag.length) ,1);
+                    blockQueue.push({
+                        type: tempBlock[0].type,
+                        color: tempBlock[0].color,
+                        blockShape: tempBlock[0].blockShape
+                        });
+                }     
+            }
+            currentBlock = blockQueue.shift();      
+        }
+
+        function holdBlock() {
+            loadHistory(2);
+            var temp = JSON.parse(JSON.stringify(heldBlock));
+            heldBlock = JSON.parse(JSON.stringify(currentBlock));
+            if (temp) {
+                currentBlock = temp;
+                showNewGameStatus();
+            } else {
+                goToNextBlock();
+            }
+            heldThisRound = true;
+        }
+
+        function clearGameStatus() {
+            blockQueue = new Array();
+            heldBlock = null;
+        }
+
+        function activePanel() {
+            //active control panel
+            if (currentMode == "freeMode") {
+                document.getElementById("BlockTableL").addEventListener("click", () => { activePan("L"); });
+                document.getElementById("BlockTableJ").addEventListener("click", () => { activePan("J"); });
+                document.getElementById("BlockTableS").addEventListener("click", () => { activePan("S"); });
+                document.getElementById("BlockTableZ").addEventListener("click", () => { activePan("Z"); });
+                document.getElementById("BlockTableO").addEventListener("click", () => { activePan("O"); });
+                document.getElementById("BlockTableT").addEventListener("click", () => { activePan("T"); });
+                document.getElementById("BlockTableI").addEventListener("click", () => { activePan("I"); });
+                document.getElementById("BlockTableTrash").addEventListener("click", () => { activePan("Trash"); });
+                document.getElementById("Reset").addEventListener("click", () => { resetBoard(); saveHistory(); });
+                document.getElementById("ClearFull").addEventListener("click", () => { if(clearFullRow()) saveHistory(); });
+            } 
+            if (currentMode == "practiceMode") {
+                document.getElementById("NextBlockButton").addEventListener("click", () => { goToNextBlock(); saveHistory(); });
+                document.getElementById("DrawButton").addEventListener("click", () => { activePan(currentBlock.type) });
+                document.getElementById("HoldButton").addEventListener("click", () => { if(!heldThisRound) { holdBlock(); saveHistory(); } });
+            }
+            document.getElementById("Empty-BlockSelect").addEventListener("click", () => { activePan("Empty"); });
+        }
+
+        function addHotKey() {
+            //keyboard control
+            window.addEventListener("keydown", function(e) {
+                if (e.code == "KeyQ")
+                    activePan("L");
+                if (e.code == "KeyW")
+                    activePan("J");
+                if (e.code == "KeyE")
+                    activePan("S");
+                if (e.code == "KeyR")
+                    activePan("Z");
+                if (e.code == "KeyA")
+                    activePan("O");
+                if (e.code == "KeyS")
+                    activePan("T");
+                if (e.code == "KeyD")
+                    activePan("I");
+                if (e.code == "KeyF")
+                    activePan("Trash");
+                if (e.code == "KeyT")
+                    activePan("Empty");
+                if (e.code == "KeyG")
+                    resetBoard();
+                if (e.ctrlKey && e.code == "KeyZ") 
+                    loadHistory(0);
+                if (e.code == "Space") 
+                    clearFullRow();
+            });
+        }
+
+        function reStart() {
+            clearHistory()
+            resetBoard();
+            if(currentMode == "practiceMode") {
+                clearGameStatus();
+            }
+        }
+
+        function start() {
+            mode["freeMode"] = {start: function() {
+                currentMode = "freeMode";
+                reStart()
+                saveHistory();
+                
+                drawFreePanel();
+                activePanel();
+                addHotKey();
+            }};
+
+            mode["practiceMode"] = {start: function() {
+                currentMode = "practiceMode";
+                reStart()
+
+
+                drawGameStatus();
+                activePanel();
+                goToNextBlock();
+                saveHistory();
+            
+            }};
+
+            createBoard();      
+            saveHistory();//save empty board
+
+            //active travel history button
+            document.getElementById("previousButton").addEventListener("click", () => { loadHistory(0) });
+            document.getElementById("nextButton").addEventListener("click", () => { loadHistory(1) });
+
+            //active switch mode button
+            document.getElementById("switchFreeMode").addEventListener("click", () => { mode["freeMode"].start() });
+            document.getElementById("switchPracticeMode").addEventListener("click", () => { mode["practiceMode"].start() });
+        }
+        
+        start();
+
+    </script>
+</body>
+</html>
