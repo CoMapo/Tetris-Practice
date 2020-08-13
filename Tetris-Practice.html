@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Tetris Plan</title>
+    <title>Tetris Practice</title>
     <style>
         /* Whole Interface */
         div#TetrisBoardDiv, div#ControDiv {
@@ -276,12 +276,13 @@
         }
 
         function saveHistory() {        
-            stepHistory[++stepNum] = {board: null, currentBlock: null, heldBlock: null, blockQueue: null};
+            stepHistory[++stepNum] = {board: null, currentBlock: null, heldThisRound: null, heldBlock: null, blockQueue: null};
             stepHistory[stepNum].board = JSON.parse(JSON.stringify(boardGrids));
             if (currentMode == "practiceMode") {
                 stepHistory = stepHistory.slice(0, stepNum + 1);
                 stepHistory[stepNum].currentBlock = JSON.parse(JSON.stringify(currentBlock));
                 stepHistory[stepNum].blockQueue = JSON.parse(JSON.stringify(blockQueue));
+                stepHistory[stepNum].heldThisRound = heldThisRound;
                 stepHistory[stepNum].heldBlock = JSON.parse(JSON.stringify(heldBlock));
             }
             displayStepNum();
@@ -304,6 +305,7 @@
             if (currentMode == "practiceMode") {
                 currentBlock = JSON.parse(JSON.stringify(saveLoaded.currentBlock));
                 blockQueue = JSON.parse(JSON.stringify(saveLoaded.blockQueue));
+                heldThisRound = saveLoaded.heldThisRound;
                 heldBlock = JSON.parse(JSON.stringify(saveLoaded.heldBlock));
                 showNewGameStatus();
             }
