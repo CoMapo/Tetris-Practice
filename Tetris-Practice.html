@@ -461,32 +461,53 @@
 
         function addHotKey() {
             //keyboard control
-            window.addEventListener("keydown", function(e) {
-                if (e.code == "KeyQ")
-                    activePan("L");
-                if (e.code == "KeyW")
-                    activePan("J");
-                if (e.code == "KeyE")
-                    activePan("Z");
-                if (e.code == "KeyR")
-                    activePan("S");
-                if (e.code == "KeyA")
-                    activePan("O");
-                if (e.code == "KeyS")
-                    activePan("T");
-                if (e.code == "KeyD")
-                    activePan("I");
-                if (e.code == "KeyF")
-                    activePan("Trash");
-                if (e.code == "KeyT")
-                    activePan("Empty");
-                if (e.code == "KeyG")
-                    resetBoard();
-                if (e.ctrlKey && e.code == "KeyZ") 
-                    loadHistory(0);
-                if (e.code == "Space") 
-                    clearFullRow();
-            });
+            if (currentMode == "freeMode") {
+                window.addEventListener("keydown", function(e) {
+                    if (e.code == "KeyQ")
+                        activePan("L");
+                    if (e.code == "KeyW")
+                        activePan("J");
+                    if (e.code == "KeyE")
+                        activePan("S");
+                    if (e.code == "KeyR")
+                        activePan("Z");
+                    if (e.code == "KeyA")
+                        activePan("O");
+                    if (e.code == "KeyS")
+                        activePan("T");
+                    if (e.code == "KeyD")
+                        activePan("I");
+                    if (e.code == "KeyF")
+                        activePan("Trash");
+                    if (e.code == "KeyT")
+                        activePan("Empty");
+                    if (e.code == "KeyG") {
+                        resetBoard(); 
+                        saveHistory();
+                    }
+                    if (e.ctrlKey && e.code == "KeyZ") 
+                        loadHistory(0);
+                    if (e.code == "KeyV") {
+                        if(clearFullRow()) 
+                            saveHistory();
+                    }
+                });
+            } 
+            if (currentMode == "practiceMode") {
+                window.addEventListener("keydown", function(e) {
+                    if(e.code == "KeyC") {
+                        if(!heldThisRound) { 
+                            holdBlock(); 
+                            saveHistory();
+                        }
+                    }
+                    if(e.code == "KeyV") { 
+                        goToNextBlock(); 
+                        saveHistory(); 
+                    }
+
+                });
+            }
         }
 
         function reStart() {
@@ -517,7 +538,7 @@
                 activePanel();
                 goToNextBlock();
                 saveHistory();
-            
+                addHotKey();
             }};
 
             createBoard();      
