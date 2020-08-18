@@ -6,17 +6,6 @@
         div#TetrisBoardDiv, div#ControDiv {
             float: left;
             margin: 20px;
-        } 
-
-        table#TetrisBoardTable {
-            position:relative;
-        }
-
-        div#HistoryTraveling {
-            width: 60%;
-            margin: auto;
-            position: relative;
-            top: 10px;     
         }
 
         /* Table Board */
@@ -33,11 +22,26 @@
         table[id^=BlockTable] td {
             width: 20px;
             height: 20px;
+        }   
+
+        /* Travel history button */
+        div#HistoryTraveling {
+            display: flex;
+            justify-content: center;
+            margin: 5px;
         }
 
+        div#HistoryTraveling > button {
+            width: 30%;
+        }
+
+        div#StepNumber {
+            width: 10%;
+            text-align: center;
+        }
 
         /* Panel */
-        div#BlockSelect > div {
+        div#BlockSelect > * {
             margin: 5px;
             cursor: pointer;
         }
@@ -46,39 +50,19 @@
             margin: 0px;
         }
 
-        div#ControlPanel button {  
+        div#ControlPanel button {
             display: block;
             width: 140px;
             height: 30px;
             font-size: 18px;
         }
 
-        div#ControlPanel  * {
+        div#PracticePanel > *, div#PracticePanel table {
             margin: 5px;
         }
 
         div#Hold {
             height: 60px;
-        }
-
-        /* Travel history button */
-        div#HistoryTraveling > button#previousButton {
-            width: 40%;
-            position: absolute;
-            left: 0px;
-        }
-
-        div#HistoryTraveling > button#nextButton {
-            width: 40%;
-            position: absolute;
-            right: 0px;
-        }
-
-        div#HistoryTraveling > div#StepNumber {
-            width: 20%;
-            position: absolute;
-            right: 40%;
-            text-align: center;
         }
 
     </style>
