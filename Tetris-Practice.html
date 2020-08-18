@@ -3,6 +3,16 @@
     <title>Tetris Practice</title>
     <style>
         /* Whole Interface */
+        html {
+            background: rgb(50, 50, 50);
+        }
+
+        body {
+            background: rgb(230, 230, 230);
+            width: 600px;
+            margin: 10px auto;
+        }
+
         div#TetrisBoardDiv, div#ControDiv {
             float: left;
             margin: 20px;
@@ -184,18 +194,22 @@
             grid.style.backgroundColor = boardGrids[getY(grid.id)][getX(grid.id)].color;        
         }
 
+        function saveAfterClick() {
+            if(panBlock) saveHistory();
+        }
+
         function activePan(blockType) {
             changePan(blockType);
 
             var panTargets = getBoardGrids();
 
             var mouseDown = false;
-            window .addEventListener("mousedown", function(e) { mouseDown = true; });      
+            window.addEventListener("mousedown", function(e) { mouseDown = true; }); 
             window.addEventListener("mouseup", function(e) { mouseDown = false; });
             for (var i = 0; i < panTargets.length; i++) {
-                panTargets[i].removeEventListener("mouseup", saveHistory);
+                panTargets[i].removeEventListener("mouseup", saveAfterClick);
                 if(currentMode == "freeMode") {
-                    panTargets[i].addEventListener("mouseup", saveHistory);
+                    panTargets[i].addEventListener("mouseup", saveAfterClick);
                 }
                 panTargets[i].addEventListener("mousemove", function(e) { if(mouseDown) changeGridColor(this, panBlock.color); });     
                 panTargets[i].addEventListener("mousedown", function(e) { changeGridColor(this, panBlock.color); });
@@ -240,10 +254,10 @@
         }
 
         function resetBoard() {
-            changePan("Empty");
+            panBlock = null;
             var panTargets = getBoardGrids();
             for (var i = 0; i < panTargets.length; i++) {
-                changeGridColor(panTargets[i], panBlock.color);
+                changeGridColor(panTargets[i], block["Empty"].color);
             }
         }
 
