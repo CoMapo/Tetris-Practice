@@ -1,2 +1,2 @@
 # Tetris-Practice
-A tool foe practice tetris
+A tool for practice tetris
